@@ -2,7 +2,7 @@
 Department of Computer Science, University of Bristol
 COMS30030: Image Processing and Computer Vision
 
-3-D from Stereo: Lab Sheet 1
+3-D from Stereo: Lab Sheet 2
 3-D simulator
 
 Yuhang Ming yuhang.ming@bristol.ac.uk
