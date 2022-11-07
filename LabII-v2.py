@@ -176,16 +176,6 @@ if __name__ == '__main__':
     Write your code here
     '''
 
-    pt0 = np.array([0, 20/math.sqrt(2), 20/math.sqrt(2), 1.])   # camera 0 centre
-    pt1 = H_list[-1][:, 3]                                      # last sphere
-    end_pts = [pt0[:3], pt1[:3]]
-    lines = [[0, 1]]
-    colors = [[1, 0, 0] for i in range(len(lines))]
-    line_set = o3d.geometry.LineSet()
-    line_set.points = o3d.utility.Vector3dVector(end_pts)
-    line_set.lines = o3d.utility.Vector2iVector(lines)
-    line_set.colors = o3d.utility.Vector3dVector(colors)
-    obj_meshes.append(line_set)
     #########################################
 
 
@@ -226,31 +216,6 @@ if __name__ == '__main__':
     Write your code here
     '''
 
-    # world to camera coordinate transform
-    pts_w = np.stack((pt0, pt1))
-    # camera to image coornidate transform
-    pts_cam1 = transform_points(pts_w, H1_wc)
-    pts_img1 = []
-    # print(K.intrinsic_matrix.shape)
-    for i in range(pts_cam1.shape[0]):
-        img_pt = np.matmul(K.intrinsic_matrix, pts_cam1[i, :].reshape(3, 1)).reshape(3,)
-        img_pt /= img_pt[2]
-        # print(img_pt)
-        pts_img1.append(img_pt[:2])
-    # get line end points across the entire image
-    cam0_centre = pts_img1[0]
-    sphere_centre = pts_img1[1]
-    left_y = sphere_centre[1] + ((0-sphere_centre[0]) * (sphere_centre[1]-cam0_centre[1]) / (sphere_centre[0]-cam0_centre[0]))
-    left_end_pt = np.array([0, left_y]).astype(int)
-    right_x = sphere_centre[0] + ((0-sphere_centre[1]) * (sphere_centre[0]-cam0_centre[0]) / (sphere_centre[1]-cam0_centre[1]))
-    right_end_pt = np.array([right_x, 0]).astype(int)
-    # draw the pts and line
-    img = cv2.imread('view1.png')
-    img = cv2.circle(img, sphere_centre.astype(int), radius=0, color=(0, 0, 255), thickness=4)
-    img = cv2.circle(img, left_end_pt, radius=0, color=(255, 0, 0), thickness=4)
-    img = cv2.circle(img, right_end_pt, radius=0, color=(0, 255, 0), thickness=4)
-    img = cv2.line(img, left_end_pt, right_end_pt, (0,255,0), 1)
-    cv2.imwrite('view1_eline_extend.png', img)
     #########################################
 
 
@@ -261,64 +226,4 @@ if __name__ == '__main__':
     Write your code here
     '''
 
-    # compute essential and fundamental matrix
-    # relative pose from cam1 to cam0
-    H_10 = np.matmul(H0_wc, np.linalg.inv(H1_wc))
-    # print(H_10)
-    Rot = H_10[:3, :3].T
-    trans = H_10[:3, 3]
-    tx = np.array([
-        [0, -trans[2], trans[1]],
-        [trans[2], 0, -trans[0]],
-        [-trans[1], trans[0], 0]
-    ])
-    E_mat = np.matmul(Rot, tx)
-    print('Essential Matrix')
-    print(E_mat)
-    Kinv = np.linalg.inv(K.intrinsic_matrix)
-    F_mat = np.matmul(np.matmul(Kinv.T, E_mat), Kinv)
-    print('Fundamental Matrix:')
-    print(F_mat)
-    print('rank:', np.linalg.matrix_rank(F_mat))
-
-    # get an image point in camera 0
-    pt1_cam0 = transform_points(pt1.reshape(1, 4), H0_wc)
-    pt1_img0 = np.matmul(K.intrinsic_matrix, pt1_cam0.reshape(3, 1))
-    pt1_img0 /= pt1_img0[2]
-
-    # compute epipolar line with the image point
-    def compute_epipolar_lines(pts, F_mat, img_idx):
-        '''
-        pts: (3xN) matrix of homogeneous coordinates
-        F_mat: (3x3) fundamental matrix
-        l: (3xN) matrix with each column being a line by a, b, c
-        '''
-        # print('computing epipolar lines')
-        # points from first image (left)
-        if img_idx == 1:
-            l = np.matmul(F_mat, pts)
-        # points from second image (right)
-        elif img_idx == 2:
-            l = np.matmul(F_mat.T, pts)
-        else:
-            raise ValueError('Wrong image index, set 1 for left image and 2 for right image.')
-        # print(l.T)
-        # normalisation
-        _, N = l.shape
-        l_norm = []
-        for i in range(N):
-            norm = (l[0,i]**2 + l[1,i]**2)**0.5
-            l_norm.append( l[:,i]/norm )
-        l_norm = np.array(l_norm)
-        # print(l_norm)
-        return l_norm.T
-
-    line0_img1 = compute_epipolar_lines(pt1_img0, F_mat, 1)
-    # get the line end pts
-    x0, y0 = map(int, [0, -line0_img1[2]/line0_img1[1] ])
-    x1, y1 = map(int, [img_width, -(line0_img1[2]+line0_img1[0]*img_width)/line0_img1[1] ])
-    # visualise
-    img = cv2.imread('view1_eline_extend.png')
-    img = cv2.line(img, left_end_pt, right_end_pt, (255,0,0), 1)
-    cv2.imwrite('view1_eline_fmat.png', img)
     #########################################
