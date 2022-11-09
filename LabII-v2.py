@@ -169,7 +169,7 @@ if __name__ == '__main__':
     
     #########################################
     '''
-    Question 1: Epipolar line
+    Question 1: Project 3-D line between reference camera COP and centre of one sphere to visualise epipolar line in 2nd view
     Hint: check reference here
     http://www.open3d.org/docs/0.7.0/tutorial/Basic/visualization.html#draw-line-set
 
@@ -180,6 +180,7 @@ if __name__ == '__main__':
 
 
     # set camera intrinsics
+    # NOTE: K here corresponds to the inverse of M_L (or M_R) in the lecture slides
     K = o3d.camera.PinholeCameraIntrinsic(640, 480, 415.69219381653056, 415.69219381653056, 319.5, 239.5)
     # print(K)
     # print(K.intrinsic_matrix.shape)
